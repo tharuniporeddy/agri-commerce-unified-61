@@ -31,6 +31,10 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     
+    // For demo purposes, we'll store the role in localStorage during sign-in
+    // In a real app, this would come from the user's profile in the database
+    localStorage.setItem('userRole', role);
+    
     const { error } = await signIn(email, password);
     
     if (error) {
@@ -41,7 +45,7 @@ const Auth = () => {
       });
     } else {
       toast({
-        title: "Welcome back!",
+        title: `Welcome back, ${role}!`,
         description: "You have been signed in successfully.",
       });
     }
@@ -102,6 +106,27 @@ const Auth = () => {
               <CardContent>
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="signin-role">I am signing in as a...</Label>
+                    <Select value={role} onValueChange={(value: 'farmer' | 'customer') => setRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">
+                          <div className="flex items-center gap-2">
+                            🛒 <span>Customer</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="farmer">
+                          <div className="flex items-center gap-2">
+                            🚜 <span>Farmer</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
@@ -128,7 +153,7 @@ const Auth = () => {
                     className="w-full shadow-button" 
                     disabled={loading}
                   >
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? "Signing in..." : `Sign In as ${role === 'farmer' ? '🚜 Farmer' : '🛒 Customer'}`}
                   </Button>
                 </form>
               </CardContent>
@@ -202,7 +227,7 @@ const Auth = () => {
                     className="w-full shadow-button" 
                     disabled={loading}
                   >
-                    {loading ? "Creating account..." : "Sign Up"}
+                    {loading ? "Creating account..." : `Sign Up as ${role === 'farmer' ? '🚜 Farmer' : '🛒 Customer'}`}
                   </Button>
                 </form>
               </CardContent>

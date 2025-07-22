@@ -31,6 +31,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserRole = async (userId: string) => {
     try {
       console.log('Fetching user role for:', userId);
+      
+      // First check localStorage for demo role
+      const storedRole = localStorage.getItem('userRole') as 'farmer' | 'customer' | null;
+      if (storedRole) {
+        console.log('Using stored role from localStorage:', storedRole);
+        setUserRole(storedRole);
+        return;
+      }
+      
+      // Fallback to database role
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -113,6 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Clear stored role on signout
+    localStorage.removeItem('userRole');
     await supabase.auth.signOut();
     // Redirect to home page after signout
     window.location.href = '/';

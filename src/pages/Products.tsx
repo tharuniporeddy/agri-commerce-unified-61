@@ -47,8 +47,8 @@ const Products = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Use test role if not set to 'actual', otherwise use actual user role
-  const currentRole = testRole === 'actual' ? userRole : testRole;
+  // Use actual user role (remove test toggle functionality)
+  const currentRole = userRole;
 
   console.log('Current user:', user?.id);
   console.log('Current userRole:', userRole);
@@ -225,23 +225,6 @@ const Products = () => {
                 {currentRole === 'farmer' ? '🚜 Farmer' : '🛒 Customer'}
               </Badge>
             )}
-          </div>
-          
-          {/* Role Testing Toggle */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Test as:</span>
-              <Select value={testRole} onValueChange={(value) => setTestRole(value as 'farmer' | 'customer' | 'actual')}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="actual">Actual Role</SelectItem>
-                  <SelectItem value="farmer">Farmer</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           <p className="text-muted-foreground max-w-4xl mb-6">
             {currentRole === 'farmer' 
