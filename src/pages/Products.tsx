@@ -4,10 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, ShoppingCart, Package, Home } from 'lucide-react';
+import { Plus, ShoppingCart, Package, Home, Edit, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddProductDialog from '@/components/AddProductDialog';
+import EditProductDialog from '@/components/EditProductDialog';
+import ProductDetailsDialog from '@/components/ProductDetailsDialog';
 import CartDialog from '@/components/CartDialog';
 import OrderDialog from '@/components/OrderDialog';
 import Header from '@/components/Header';
@@ -34,12 +37,18 @@ const Products = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showEditProduct, setShowEditProduct] = useState(false);
+  const [showProductDetails, setShowProductDetails] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [testRole, setTestRole] = useState<'farmer' | 'customer' | null>(null);
   const { user, userRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Use test role if set, otherwise use actual user role
+  const currentRole = testRole || userRole;
 
   console.log('Current user:', user?.id);
   console.log('Current userRole:', userRole);
@@ -143,6 +152,22 @@ const Products = () => {
     setShowOrderDialog(true);
   };
 
+  const editProduct = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    setSelectedProduct(product);
+    setShowEditProduct(true);
+  };
+
+  const viewProductDetails = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    setSelectedProduct(product);
+    setShowProductDetails(true);
+  };
+
   const deleteProduct = async (productId: string) => {
     if (!user) return;
 
@@ -195,21 +220,38 @@ const Products = () => {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-3xl font-bold text-foreground">Marketplace</h2>
-            {userRole && (
-              <Badge variant={userRole === 'farmer' ? 'default' : 'secondary'} className="text-sm">
-                {userRole === 'farmer' ? '🚜 Farmer' : '🛒 Customer'}
+            {currentRole && (
+              <Badge variant={currentRole === 'farmer' ? 'default' : 'secondary'} className="text-sm">
+                {currentRole === 'farmer' ? '🚜 Farmer' : '🛒 Customer'}
               </Badge>
             )}
           </div>
+          
+          {/* Role Testing Toggle */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Test as:</span>
+              <Select value={testRole || ''} onValueChange={(value) => setTestRole(value as 'farmer' | 'customer' | null)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Actual Role</SelectItem>
+                  <SelectItem value="farmer">Farmer</SelectItem>
+                  <SelectItem value="customer">Customer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <p className="text-muted-foreground max-w-4xl mb-6">
-            {userRole === 'farmer' 
+            {currentRole === 'farmer' 
               ? 'Welcome, Farmer! Manage your products here. Add new items to sell in the marketplace and track your inventory.'
               : 'Welcome to the Marketplace! Here you can explore available products, add them to your cart, or buy directly from farmers. Every order supports a farmer and promotes sustainable agriculture.'
             }
           </p>
           
           <div className="flex flex-wrap items-center gap-4 mb-6">
-            {userRole === 'farmer' ? (
+            {currentRole === 'farmer' ? (
               // Farmer Actions
               <Button 
                 onClick={() => setShowAddProduct(true)}
@@ -278,37 +320,61 @@ const Products = () => {
                       </Badge>
                     </div>
                     
-                    {userRole === 'farmer' ? (
-                      // Farmer can only see their own products and delete them
+                    {currentRole === 'farmer' ? (
+                      // Farmer can only see their own products and manage them
                       product.user_id === user?.id && (
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => deleteProduct(product.id)}
-                          className="w-full"
-                        >
-                          🗑️ Remove Product
-                        </Button>
+                        <div className="space-y-2">
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => editProduct(product.id)}
+                              className="flex-1"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => deleteProduct(product.id)}
+                              className="flex-1"
+                            >
+                              🗑️ Remove
+                            </Button>
+                          </div>
+                        </div>
                       )
                     ) : (
                       // Customer Actions
-                      <div className="flex space-x-2">
+                      <div className="space-y-2">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => addToCart(product.id)}
-                          className="flex-1"
+                          onClick={() => viewProductDetails(product.id)}
+                          className="w-full"
                         >
-                          <ShoppingCart className="h-4 w-4 mr-1" />
-                          Add to Cart
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
                         </Button>
-                        <Button 
-                          size="sm" 
-                          onClick={() => buyNow(product.id)}
-                          className="flex-1 shadow-button"
-                        >
-                          Buy Now
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => addToCart(product.id)}
+                            className="flex-1"
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            Add to Cart
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => buyNow(product.id)}
+                            className="flex-1 shadow-button"
+                          >
+                            Buy Now
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -320,16 +386,33 @@ const Products = () => {
       </main>
 
       {/* Dialogs - Show based on user role */}
-      {userRole === 'farmer' && (
-        <AddProductDialog 
-          open={showAddProduct}
-          onOpenChange={setShowAddProduct}
-          onProductAdded={fetchProducts}
-        />
+      {currentRole === 'farmer' && (
+        <>
+          <AddProductDialog 
+            open={showAddProduct}
+            onOpenChange={setShowAddProduct}
+            onProductAdded={fetchProducts}
+          />
+          
+          <EditProductDialog 
+            open={showEditProduct}
+            onOpenChange={setShowEditProduct}
+            product={selectedProduct}
+            onProductUpdated={fetchProducts}
+          />
+        </>
       )}
       
-      {userRole === 'customer' && (
+      {currentRole === 'customer' && (
         <>
+          <ProductDetailsDialog 
+            open={showProductDetails}
+            onOpenChange={setShowProductDetails}
+            product={selectedProduct}
+            onAddToCart={addToCart}
+            onBuyNow={buyNow}
+          />
+
           <CartDialog 
             open={showCart}
             onOpenChange={setShowCart}
